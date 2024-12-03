@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -17,7 +16,7 @@ import (
 const (
 	assignor = ""
 	brokers  = "localhost:9092,localhost:9093,localhost:9094"
-	tTopic   = "singlefile_%s"
+	tTopic   = "%s"
 )
 
 func main() {
@@ -93,7 +92,7 @@ func (consumer *Consumer) Cleanup(sarama.ConsumerGroupSession) error {
 }
 
 func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	var prev int
+	// var prev int
 	for {
 		select {
 		case message, ok := <-claim.Messages():
@@ -102,12 +101,13 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 				return nil
 			}
 
-			val, _ := strconv.Atoi(string(message.Value))
-			log.Printf("Message: partition %d offset = %d value = %d", message.Partition, message.Offset, val)
-			if prev != 0 && val != prev+1 {
-				log.Printf("Warning")
-			}
-			prev = val
+			val := string(message.Value)
+			key := message.Key
+			log.Printf("Message: p %d o = %d key = %s val = %s", message.Partition, message.Offset, key, val)
+			// if prev != 0 && val != prev+1 {
+			// 	log.Printf("Warning")
+			// }
+			// prev = val
 		case <-session.Context().Done():
 			return nil
 		}

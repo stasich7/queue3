@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -11,10 +12,15 @@ import (
 )
 
 const (
-	tTopic     = "singlefile_%s"
-	brokers    = "localhost:9092,localhost:9093,localhost:9094"
+	tTopic     = "%s"
+	brokers    = "localhost:9092" //,localhost:9093,localhost:9094"
 	intervalMs = 1000
 )
+
+type Msg struct {
+	Key   string
+	Value string
+}
 
 func main() {
 	var (
@@ -29,19 +35,19 @@ func main() {
 	flag.Parse()
 	topic := fmt.Sprintf(tTopic, id)
 
-	// clusterAdmin, err := sarama.NewClusterAdmin(strings.Split(brokers, ","), sarama.NewConfig())
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
+	clusterAdmin, err := sarama.NewClusterAdmin(strings.Split(brokers, ","), sarama.NewConfig())
+	if err != nil {
+		log.Panic(err)
+	}
 
-	// err = clusterAdmin.CreateTopic(topic, &sarama.TopicDetail{
-	// 	NumPartitions:     int32(p),
-	// 	ReplicationFactor: int16(r),
-	// }, false)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	// log.Printf("Created topic %s partitions %d repicas %d", topic, p, r)
+	err = clusterAdmin.CreateTopic(topic, &sarama.TopicDetail{
+		NumPartitions:     int32(p),
+		ReplicationFactor: int16(r),
+	}, false)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Printf("Created topic %s partitions %d repicas %d", topic, p, r)
 
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
@@ -65,7 +71,8 @@ func main() {
 	for range t.C {
 		msg := &sarama.ProducerMessage{
 			Topic: topic,
-			Value: sarama.StringEncoder(strconv.Itoa(i)),
+			Key:   sarama.StringEncoder("key"),
+			Value: sarama.StringEncoder("msg " + strconv.Itoa(i)),
 		}
 		i++
 
