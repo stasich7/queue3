@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -13,7 +12,7 @@ import (
 
 const (
 	tTopic     = "singlefile_%s"
-	brokers    = "localhost:9092,localhost:9093"
+	brokers    = "localhost:9092,localhost:9093,localhost:9094"
 	intervalMs = 1000
 )
 
@@ -30,16 +29,19 @@ func main() {
 	flag.Parse()
 	topic := fmt.Sprintf(tTopic, id)
 
-	clusterAdmin, _ := sarama.NewClusterAdmin(strings.Split(brokers, ","), sarama.NewConfig())
+	// clusterAdmin, err := sarama.NewClusterAdmin(strings.Split(brokers, ","), sarama.NewConfig())
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
 
-	err := sarama.ClusterAdmin.CreateTopic(clusterAdmin, topic, &sarama.TopicDetail{
-		NumPartitions:     int32(p),
-		ReplicationFactor: int16(r),
-	}, false)
-	if err != nil {
-		log.Println(err)
-	}
-	log.Printf("Created topic %s partitions %d repicas %d", topic, p, r)
+	// err = clusterAdmin.CreateTopic(topic, &sarama.TopicDetail{
+	// 	NumPartitions:     int32(p),
+	// 	ReplicationFactor: int16(r),
+	// }, false)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// log.Printf("Created topic %s partitions %d repicas %d", topic, p, r)
 
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll

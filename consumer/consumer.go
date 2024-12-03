@@ -11,19 +11,20 @@ import (
 	"sync"
 
 	"github.com/IBM/sarama"
+	"github.com/google/uuid"
 )
 
 const (
 	assignor = ""
-	brokers  = "localhost:9092,localhost:9093"
-	group    = "consumer"
+	brokers  = "localhost:9092,localhost:9093,localhost:9094"
 	tTopic   = "singlefile_%s"
 )
 
 func main() {
 	var (
-		new bool
-		id  string
+		new   bool
+		id    string
+		group uuid.UUID
 	)
 	flag.StringVar(&id, "id", "", "")
 	flag.BoolVar(&new, "new", false, "")
@@ -42,10 +43,11 @@ func main() {
 		ready: make(chan bool),
 	}
 
+	group, _ = uuid.NewRandom()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client, err := sarama.NewConsumerGroup(strings.Split(brokers, ","), group, config)
+	client, err := sarama.NewConsumerGroup(strings.Split(brokers, ","), group.String(), config)
 	if err != nil {
 		log.Panicf("Error creating consumer group client: %v", err)
 	}
@@ -69,7 +71,7 @@ func main() {
 	}()
 
 	<-consumer.ready
-	log.Println("Consumer started for topic", topic)
+	log.Println("Consumer started for topic", topic, " group ID: ", group)
 
 	wg.Wait()
 	if err = client.Close(); err != nil {
