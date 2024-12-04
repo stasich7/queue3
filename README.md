@@ -26,6 +26,6 @@ go run consumer/consumer.go -id=output3
 
 
 ## Результат
-<img src="kstreams_run.png" width="70%">
+<img src="kstreams_run.png">
 
-<img src="kafkaui.png" width="70%">
+<img src="kafkaui.png">
