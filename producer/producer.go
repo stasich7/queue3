@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"strconv"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -15,6 +15,10 @@ const (
 	tTopic     = "%s"
 	brokers    = "localhost:9092" //,localhost:9093,localhost:9094"
 	intervalMs = 1000
+)
+
+var (
+	fruit = [...]string{"🍒", "🍋", "🌵"}
 )
 
 type Msg struct {
@@ -66,21 +70,20 @@ func main() {
 		// clusterAdmin.DeleteTopic(topic)
 	}()
 
-	i := 0
 	t := time.NewTicker(time.Millisecond * intervalMs)
 	for range t.C {
+		fruit := fruit[rand.Intn(len(fruit))]
 		msg := &sarama.ProducerMessage{
 			Topic: topic,
-			Key:   sarama.StringEncoder("key"),
-			Value: sarama.StringEncoder("msg " + strconv.Itoa(i)),
+			Key:   sarama.StringEncoder(fmt.Sprintf("slot_%s", topic)),
+			Value: sarama.StringEncoder(fruit),
 		}
-		i++
 
 		partition, offset, err := producer.SendMessage(msg)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Message [%d] sent partition(%d)/offset(%d)\n", i, partition, offset)
+		fmt.Printf("Message [%s] sent partition(%d)/offset(%d)\n", fruit, partition, offset)
 	}
 
 }

@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	brokers               = []string{"localhost:9092"} //, "localhost:9093", "localhost:9094"}
+	brokers               = []string{"localhost:9092", "localhost:9093", "localhost:9094"}
 	topic   []goka.Stream = []goka.Stream{"a3", "a4", "a5"}
-	group   goka.Group    = "kstream2-group"
+	group   goka.Group    = "kstream-group"
 	output  goka.Stream   = "output3"
 	sigs                  = make(chan os.Signal)
 
@@ -31,13 +31,13 @@ func randomStorageBuilder(suffix string) storage.Builder {
 
 func runProcessor() {
 	cb := func(ctx goka.Context, msg interface{}) {
-		val := ctx.Value()
-		// val, ok := msg.(string)
-		// if !ok {
-		// 	log.Printf("type assertion error, %#v\n", ctx.Value())
-		// }
-		ctx.Emit(output, "key", val)
-		log.Printf("forward from [%s] val = [%s]", ctx.Topic(), val)
+		val := msg
+		if val == nil {
+			log.Printf("val is nil at processor")
+			return
+		}
+		log.Printf("forwarding from [%s] key = [%s] val = [%s]", ctx.Topic(), ctx.Key(), val)
+		ctx.Emit(output, ctx.Key(), val)
 		ctx.SetValue(val)
 	}
 
@@ -50,8 +50,8 @@ func runProcessor() {
 			goka.Input(goka.Stream(topic[0]), new(codec.String), cb),
 			goka.Input(goka.Stream(topic[1]), new(codec.String), cb),
 			goka.Input(goka.Stream(topic[2]), new(codec.String), cb),
-			goka.Output(output, new(codec.String)),
 			goka.Persist(new(codec.String)),
+			goka.Output(output, new(codec.String)),
 		),
 		goka.WithTopicManagerBuilder(goka.TopicManagerBuilderWithTopicManagerConfig(tmc)),
 		goka.WithConsumerGroupBuilder(goka.DefaultConsumerGroupBuilder),
@@ -87,9 +87,16 @@ func runView() {
 	}
 	go func() {
 		t := time.NewTicker(time.Second * 3)
+		var win string
 		for range t.C {
-			val, _ := view.Get("key")
-			fmt.Printf("view: %#v\n", val)
+			val3, _ := view.Get("slot_a3")
+			val4, _ := view.Get("slot_a4")
+			val5, _ := view.Get("slot_a5")
+			win = ""
+			if val3 == val4 && val4 == val5 {
+				win = "Win!"
+			}
+			fmt.Printf("%s %s %s %s\n", val3, val4, val5, win)
 
 			select {
 			case <-sigs:
@@ -119,7 +126,7 @@ func main() {
 	// 	log.Fatalf("Error creating topic manager: %v", err)
 	// }
 	// defer tm.Close()
-	// err = tm.EnsureStreamExists(string(topic), 8)
+	// err = tm.EnsureStreamExists(string(topic[0]), 8)
 	// if err != nil {
 	// 	log.Printf("Error creating kafka topic %s: %v", topic, err)
 	// }
